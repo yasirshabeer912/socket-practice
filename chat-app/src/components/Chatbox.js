@@ -1,40 +1,85 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { useParams } from 'react-router-dom';
 
-function Chatbox({ messages, onSendMessage }) {
+const Chatbox = ({ userData }) => {
+  const { id } = useParams();
+  const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
+  const [token, setToken] = useState('');
 
-  const handleSendMessage = () => {
-    if (newMessage.trim()) {
-      onSendMessage(newMessage);
+  useEffect(() => {
+    const storedToken = localStorage.getItem('token');
+    if (storedToken) {
+      setToken(storedToken);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!token) return; // Wait until the token is set
+
+    const fetchMessages = async () => {
+      try {
+        const response = await axios.get(`http://localhost:3001/chat/messages/${userData.id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        setMessages(response.data);
+        console.log('totoal messages',messages)
+      } catch (error) {
+        console.error('Error fetching messages', error);
+      }
+    };
+
+    fetchMessages();
+  }, [id, token]); // Fetch messages only when the token is available
+
+  const sendMessage = async () => {
+    if (!token) return; // Prevent sending if the token is not set
+
+    try {
+      await axios.post('http://localhost:3001/chat/message', {
+        chatId: id,
+        content: newMessage,
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
       setNewMessage('');
+      const response = await axios.get(`http://localhost:3001/chat/messages/${userData.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      setMessages(response.data);
+    } catch (error) {
+      console.error('Error sending message', error);
     }
   };
 
   return (
-    <div className="flex-1 flex flex-col justify-between p-4">
-      <div className="mb-4">
-        {messages.map((msg, index) => (
-          <div key={index} className={`mb-2 ${msg.fromMe ? 'text-right' : 'text-left'}`}>
-            <div className={`inline-block p-2 rounded-lg ${msg.fromMe ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>
-              {msg.text}
-            </div>
-          </div>
+    <div className="chatbox">
+      <ul>
+        {messages.map((message) => (
+          <li key={message.id}>
+            {message.senderId === userData.id ? 'Me' : 'User'}: {message.content}
+          </li>
         ))}
-      </div>
-      <div className="flex items-center">
-        <input
-          type="text"
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          className="flex-1 border rounded px-4 py-2"
-          placeholder="Type a message..."
-        />
-        <button onClick={handleSendMessage} className="ml-4 bg-blue-500 text-white px-4 py-2 rounded">
-          Send
-        </button>
-      </div>
+      </ul>
+
+      <input
+        type="text"
+        value={newMessage}
+        onChange={(e) => setNewMessage(e.target.value)}
+        placeholder="Type a message..."
+      />
+      <button onClick={sendMessage}>Send</button>
     </div>
   );
-}
+};
 
 export default Chatbox;

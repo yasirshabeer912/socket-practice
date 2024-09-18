@@ -1,18 +1,26 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
+import axios from 'axios'
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
+    try {
+      let userData = {
+        "username": email,
+        "password": password
+      };
+        const {data} =await  axios.post('http://localhost:3001/auth/login', userData)
+        console.log(data);
+        localStorage.setItem('token', data.token);
+          navigate('/chat');
+    } catch (error) {
+      console.log(error)
+    }
     
-    // Implement login logic here, for now redirect to chat page after login
-    // Example: if login successful, store token in localStorage
-    localStorage.setItem('user', 'loggedInUserToken');
-    navigate('/chat');
   };
 
   return (

@@ -1,19 +1,29 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
+import axios from 'axios'
 function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
-  const handleRegister = (e) => {
-    e.preventDefault();
-    
-    // Implement registration logic here
-    // For now, we assume registration is successful and redirect to login
+  const handleRegister = async (e) => {
+  e.preventDefault();
+  try {
+    const userData = {
+      username: email,
+      password: password,
+    };
+
+    const { data } = await axios.post('http://localhost:3001/auth/register', userData);
+    console.log(data);
+    // localStorage.setItem('token', data.token);
     navigate('/login');
-  };
+  } catch (error) {
+    console.log(error);
+  }
+};
+
 
   return (
     <div className="flex justify-center items-center h-screen bg-gray-100">
