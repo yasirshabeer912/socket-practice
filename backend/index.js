@@ -28,7 +28,7 @@ const io = new Server(server, {
     methods: ['GET', 'POST']
   }
 });
-
+ 
 // Middleware for token validation
 app.post('/validate-token', async (req, res) => {
   const token = req.body.token;
