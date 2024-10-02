@@ -20,7 +20,7 @@ const findOrCreateChat = async (req, res) => {
         userId2: userId1
       }
     });
-
+    console.log(chat)
     // If chat doesn't exist, create one
     if (!chat) {
       chat = await Chat.create({ userId1, userId2 });
@@ -48,8 +48,8 @@ const getMessages = async (req, res) => {
   const { id } = req.params;
   console.log(id)
   try {
-    const messages = await Message.findAll({ where: { senderId:id } });
-    console.log(messages)
+    const messages = await Message.findAll({ where: { chatId:id } });
+    // console.log(messages)
     res.json(messages);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch messages' });

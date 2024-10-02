@@ -8,12 +8,28 @@ const chatRoutes = require('./routes/chatRoutes');
 const jwt = require('jsonwebtoken');
 const User = require('./models/User');
 
+// Setup express app
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.json());
 app.use('/auth', authRoutes);
 app.use('/chat', chatRoutes);
+
+// HTTP server to attach socket.io
+const http = require('http');
+const server = http.createServer(app);
+
+// Setup socket.io
+const { Server } = require('socket.io');
+const io = new Server(server, {
+  cors: {
+    origin: '*', // Allow all origins (adjust as necessary)
+    methods: ['GET', 'POST']
+  }
+});
+
+// Middleware for token validation
 app.post('/validate-token', async (req, res) => {
   const token = req.body.token;
   if (!token) {
@@ -40,10 +56,40 @@ app.post('/validate-token', async (req, res) => {
   });
 });
 
+// Sync database and start server
 sequelize.sync().then(() => {
   console.log('Database connected and synced');
+  
+  // Socket.io connection event
+  io.on('connection', (socket) => {
+    console.log('A user connected:', socket.id);
+
+    // Listen for 'chatMessage' event from client
+    socket.on('chatMessage', async (messageData) => {
+      const { chatId, content, senderId } = messageData;
+      
+      // Store the message in the database (example, using Sequelize)
+      try {
+        const newMessage = await sequelize.models.Message.create({
+          chatId,
+          content,
+          senderId,
+        });
+
+        // Broadcast the new message to all connected clients
+        io.emit('message', newMessage); // Broadcast to everyone
+      } catch (error) {
+        console.error('Error saving message to DB:', error);
+      }
+    });
+
+    socket.on('disconnect', () => {
+      console.log('A user disconnected:', socket.id);
+    });
+  });
+
   const PORT = process.env.PORT || 3001;
-  app.listen(PORT, () => {
+  server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
   });
 });
